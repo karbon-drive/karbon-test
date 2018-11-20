@@ -1,0 +1,18 @@
+{
+        "projects" : [
+                {
+                        "name" : "constent_short_test",
+                        "kind" : "SharedLib",
+                        "language" : "C",
+
+                        "files" : [
+                                "./**.h",
+                                "./**.c"
+                        ],
+
+                        "dependencies" : [
+                                "karbon_drive"
+                        ]
+                }
+        ]
+}
