@@ -36,7 +36,7 @@ kd_project_entry()
         
         char *str = 0;
         int bytes = 0;
-        alloc(&str, bytes);
+        alloc((void*)&str, &bytes);
         if(bytes > size) {
                 kd_ctx_get_vendor_string(&str, 0);
         }
@@ -54,7 +54,8 @@ int kd_project_details() {
 }
 
 
+KD_EXPORT
 int
 kd_render() {
-         
+        return 0;
 }

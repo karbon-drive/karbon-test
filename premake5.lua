@@ -537,6 +537,10 @@ for i, proj in ipairs(projects) do
 
     buildoptions(proj_buildopts)
 
+    if(os.target() == "linux" and proj.kind == "StaticLib") then
+        buildoptions("-fPIC");
+    end
+
     -- links -- 
 
     local proj_links = find_table(proj, "links")
