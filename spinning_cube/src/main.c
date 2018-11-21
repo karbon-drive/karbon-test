@@ -34,20 +34,14 @@ kd_project_entry()
         int size;
         kd_ctx_get_vendor_string(0, &size);
         
-        char *str;
+        char *str = 0;
+        int bytes = 0;
+        alloc(&str, bytes);
+        if(bytes > size) {
+                kd_ctx_get_vendor_string(&str, 0);
+        }
         
-        kd_ctx_get_vendor_string(&str, 0);
-        
-        
-        
-        printf("%s\n", str);
-        free(str);
-        
-//        kd_window_get(0);
-//        kd_window_set(0);
-//        void *addr;
-//        int bytes;
-//        kd_alloc(0, &addr, &bytes);
+        printf("Vendor String %s\n", str);
         
         return 1;
 }
@@ -59,3 +53,8 @@ int kd_project_details() {
         return 0;
 }
 
+
+int
+kd_render() {
+         
+}
