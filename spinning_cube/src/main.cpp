@@ -149,24 +149,28 @@ kd_setup() {
 KD_API KD_EXPORT void
 kd_shutdown() {
         int i;
+        (void)i;
 }
 
 
 KD_API KD_EXPORT void
 kd_early_think() {
         int i;
+        (void)i;
 }
 
 
 KD_API KD_EXPORT void
 kd_think() {
         int i;
+        (void)i;
 }
 
 
 KD_API KD_EXPORT void
 kd_late_think() {
         int i;
+        (void)i;
 }
 
 
