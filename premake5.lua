@@ -472,6 +472,21 @@ end
 
 configurations(config_names);
 
+-- https://github.com/premake/premake-core/issues/935
+function os.winSdkVersion()
+    local reg_arch = iif( os.is64bit(), "\\Wow6432Node\\", "\\" )
+    local sdk_version = os.getWindowsRegistry( "HKLM:SOFTWARE" .. reg_arch .."Microsoft\\Microsoft SDKs\\Windows\\v10.0\\ProductVersion" )
+    if sdk_version ~= nil then return sdk_version end
+end
+
+if(os.target() == "windows") then
+    system("Windows")
+
+    print("SDK: " .. os.winSdkVersion())
+
+    systemversion(os.winSdkVersion() .. ".0")
+end
+
 
 -------------------------------------------------------------------- Projects --
 
@@ -582,7 +597,7 @@ for i, proj in ipairs(projects) do
             vectorextensions(config.simd)
             optimize(config.optimize)
             floatingpoint(config.fast_float)
-
+            architecture("x64")
     end
 
 end

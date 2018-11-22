@@ -3,11 +3,11 @@
                 {
                         "name" : "test_spinning_cube",
                         "kind" : "SharedLib",
-                        "language" : "C",
+                        "language" : "C++",
 
                         "files" : [
-                                "./**.h",
-                                "./**.c"
+                                "./**.hpp",
+                                "./**.cpp"
                         ],
 
                         "dependencies" : [
