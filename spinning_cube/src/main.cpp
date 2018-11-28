@@ -29,7 +29,7 @@ alloc(void **out_addr, int *bytes) {
 
 
 struct spinning_cube_ctx {
-        int i;
+        uint32_t chunk_id;
 };
 
 spinning_cube_ctx spin_ctx{};
@@ -44,6 +44,31 @@ kd_setup() {
         #elif KD_LINUX
         renderer_vk1_create();
         #endif
+
+        /* buffers */
+        float vertices[] = {1,1};
+        int index[] = {1,2};
+        uint8_t *buffers[]{ (uint8_t*)vertices, (uint8_t*)index };
+
+        /* mesh */
+        kd_mesh_data mesh_data[1] {};
+        mesh_data[0].geometry.buffer = 1;
+        mesh_data[0].geometry.buffer_offset = 0;
+        mesh_data[0].geometry.buffer_size = sizeof(vertices);
+
+        mesh_data[0].index.buffer = 2;
+        mesh_data[0].index.buffer_offset = 0;
+        mesh_data[0].index.buffer_size = sizeof(index);
+
+        /* chunk desc */
+        kd_chunk_desc ch_desc{};
+        ch_desc.mesh_data = mesh_data;
+        ch_desc.mesh_count = sizeof(mesh_data) / sizeof(mesh_data[0]);
+        ch_desc.buffers = &buffers[0];
+        ch_desc.buffer_count = sizeof(buffers) / sizeof(buffers[0]);
+
+        auto res = kd_chunk_add(&ch_desc, &spin_ctx.chunk_id);
+        assert(res == KD_RESULT_OK);
 }
 
 KD_API KD_EXPORT void

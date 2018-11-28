@@ -1,21 +1,27 @@
 #if defined(_WIN32)
 
-#if KD_WINDOWS
+#include <assert.h>
+#include <vector>
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3dcompiler.lib")
-#endif
 
 struct rdr_ctx {
         ID3D12Device *d3d_device;
         ID3D12CommandQueue *cmd_queue;
         ID3D12CommandAllocator* cmd_alloc;
         ID3D12GraphicsCommandList* cmd_list;
+        ID3D12DescriptorHeap *desc_heap;
+        IDXGISwapChain3 *swap_chain;
 
         ID3D12Resource *backbuffer[2];
         UINT backbuffer_index;
+
+        unsigned long long fence_value;
+        ID3D12Fence* fence;
+        HANDLE fence_evt;
 
 } rdr_ctx;
 
@@ -116,6 +122,8 @@ renderer_dx12_create() {
 
         res = swap_chain_->QueryInterface(ref_id, pp_swap);
 
+        rdr_ctx.swap_chain = swap_chain;
+
         factory->Release();
         factory = 0;
 
@@ -131,6 +139,8 @@ renderer_dx12_create() {
 
         res = dev->CreateDescriptorHeap(&rt_heap_desc, ref_id, pp_rtvh);
         assert(!FAILED(res));
+
+        rdr_ctx.desc_heap = desc_heap;
 
         auto heap_start = desc_heap->GetCPUDescriptorHandleForHeapStart();
         auto rtv_desc_size = dev->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
@@ -151,9 +161,9 @@ renderer_dx12_create() {
 
         auto index = swap_chain->GetCurrentBackBufferIndex();
 
-        spin_ctx.backbuffer[0] = back_buffer_rt[0];
-        spin_ctx.backbuffer[1] = back_buffer_rt[1];
-        spin_ctx.backbuffer_index = index;
+        rdr_ctx.backbuffer[0] = back_buffer_rt[0];
+        rdr_ctx.backbuffer[1] = back_buffer_rt[1];
+        rdr_ctx.backbuffer_index = index;
 
         ID3D12CommandAllocator* cmd_alloc = nullptr;
         auto alloc_type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -162,7 +172,7 @@ renderer_dx12_create() {
         res = dev->CreateCommandAllocator(alloc_type, ref_id, pp_cmd_alloc);
         assert(!FAILED(res));
 
-        spin_ctx.cmd_alloc = cmd_alloc;
+        rdr_ctx.cmd_alloc = cmd_alloc;
 
         auto cmd_type = D3D12_COMMAND_LIST_TYPE_DIRECT;
         ref_id = __uuidof(ID3D12GraphicsCommandList);
@@ -172,7 +182,7 @@ renderer_dx12_create() {
         assert(!FAILED(res));
         cmd_list->Close();
 
-        spin_ctx.cmd_list = cmd_list;
+        rdr_ctx.cmd_list = cmd_list;
 
         ID3D12Fence* fence = nullptr;;
         auto fflag = D3D12_FENCE_FLAG_NONE;
@@ -186,8 +196,9 @@ renderer_dx12_create() {
         fence_evt = CreateEventEx(NULL, FALSE, FALSE, EVENT_ALL_ACCESS);
         assert(fence_evt);
 
-        unsigned long long fence_value;
-
+        rdr_ctx.fence_evt = fence_evt;
+        rdr_ctx.fence_value = 1;
+        rdr_ctx.fence = fence;
 
         /* http://www.rastertek.com/dx12tut03.html */
 
@@ -221,9 +232,46 @@ renderer_dx12_create() {
         */
 
         /* save d3d items */
-        spin_ctx.d3d_device = dev;
-        spin_ctx.cmd_queue = cmd_queue;
+        rdr_ctx.d3d_device = dev;
+        rdr_ctx.cmd_queue = cmd_queue;
 
+        /* mesh */
+        float cube_verts[] = {
+                /* pos f3 - color f3 */
+                -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+                -0.5f, -0.5f, +0.5f, 0.0f, 0.0f, 1.0f,
+                -0.5f, +0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+                -0.5f, +0.5f, +0.5f, 0.0f, 1.0f, 1.0f,
+                +0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 1.0f,
+                +0.5f, +0.5f, -0.5f, 1.0f, 1.0f, 0.0f,
+                +0.5f, +0.5f, +0.5f, 1.0f, 1.0f, 1.0f,
+        };
+
+        unsigned short cube_index[] = {
+                0, 2, 1,
+                1, 2, 3,
+
+                4, 5, 6,
+                5, 7, 6,
+
+                0, 1, 5,
+                0, 5, 4,
+
+                2, 6, 7,
+                2, 7, 3,
+
+                0, 4, 5,
+                0, 6, 2,
+
+                1, 3, 7,
+                1, 7, 5
+        };
+
+        D3D12_HEAP_PROPERTIES heap_props;
+        heap_props.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+
+        return 1;
 }
 
 
@@ -238,30 +286,74 @@ renderer_dx12_render() {
         unsigned long long fence_wait_for;
         ID3D12PipelineState* pipeline = 0;
 
-        result = spin_ctx.cmd_alloc->Reset();
+        result = rdr_ctx.cmd_alloc->Reset();
         assert(!FAILED(result));
 
-        result = spin_ctx.cmd_list->Reset(spin_ctx.cmd_alloc, pipeline);
+        result = rdr_ctx.cmd_list->Reset(rdr_ctx.cmd_alloc, pipeline);
         assert(!FAILED(result));
 
         barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-        UINT index = spin_ctx.backbuffer_index;
-        barrier.Transition.pResource = spin_ctx.backbuffer[index];
+        UINT index = rdr_ctx.backbuffer_index;
+        barrier.Transition.pResource = rdr_ctx.backbuffer[index];
 
         barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
         barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
         barrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
         barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-        spin_ctx.cmd_list->ResourceBarrier(1, &barrier);
+        rdr_ctx.cmd_list->ResourceBarrier(1, &barrier);
+
+        D3D12_CPU_DESCRIPTOR_HANDLE heap_handle = rdr_ctx.desc_heap->GetCPUDescriptorHandleForHeapStart();
+        rtv_desc_size = rdr_ctx.d3d_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+        if (rdr_ctx.backbuffer_index == 1) {
+                heap_handle.ptr += rtv_desc_size;
+        }
+
+        rdr_ctx.cmd_list->OMSetRenderTargets(1, &heap_handle, FALSE, NULL);
+
+        color[0] = (float)(rand() % 255) / 255.0f;
+        color[1] = (float)(rand() % 255) / 255.0f;
+        color[2] = (float)(rand() % 255) / 255.0f;
+        color[3] = 1.0f;
+        rdr_ctx.cmd_list->ClearRenderTargetView(heap_handle, color, 0, NULL);
+
+        barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+        barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+        
+        rdr_ctx.cmd_list->ResourceBarrier(1, &barrier);
+
+        result = rdr_ctx.cmd_list->Close();
+        assert(!FAILED(result));
+
+        pp_cmd_list[0] = rdr_ctx.cmd_list;
+
+        rdr_ctx.cmd_queue->ExecuteCommandLists(1, pp_cmd_list);
+
+        fence_wait_for = rdr_ctx.fence_value;
+        result = rdr_ctx.cmd_queue->Signal(rdr_ctx.fence, fence_wait_for);
+        assert(!FAILED(result));
+        rdr_ctx.fence_value += 1;
+
+        auto comp_value = rdr_ctx.fence->GetCompletedValue();
+
+        //if (comp_value < fence_wait_for) {
+                result = rdr_ctx.fence->SetEventOnCompletion(fence_wait_for, rdr_ctx.fence_evt);
+                assert(!FAILED(result));
+        //}
+        WaitForSingleObject(rdr_ctx.fence_evt, INFINITE);
+
+        rdr_ctx.backbuffer_index == 0 ? rdr_ctx.backbuffer_index = 1 : rdr_ctx.backbuffer_index = 0;
+
+        rdr_ctx.swap_chain->Present(0, 0);
 
         /* http://www.rastertek.com/dx12tut03.html */
-
+        return 1;
 }
 
 
 int
 renderer_dx12_destroy() {
-
+        return 0;
 }
 
 
