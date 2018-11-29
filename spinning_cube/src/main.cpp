@@ -1,4 +1,3 @@
-
 #include <karbon/drive.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -69,6 +68,7 @@ kd_setup() {
         ch_desc.buffer_count = sizeof(buffers) / sizeof(buffers[0]);
 
         auto res = kd_chunk_add(&ch_desc, &spin_ctx.chunk_id);
+        (void)res;
         //assert(res == KD_RESULT_OK);
 }
 
