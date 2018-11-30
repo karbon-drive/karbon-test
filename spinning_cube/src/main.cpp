@@ -4,12 +4,6 @@
 #include <assert.h>
 #include <vector>
 
-#if KD_WINDOWS
-#include "renderer_dx12.hpp"
-#elif KD_LINUX
-#include "renderer_vk1.hpp"
-#endif
-
 
 void
 alloc(void **out_addr, int *bytes) {
@@ -34,16 +28,8 @@ struct spinning_cube_ctx {
 spinning_cube_ctx spin_ctx{};
 
 
-
-
 KD_API KD_EXPORT void
 kd_setup() {
-        #if KD_WINDOWS
-        renderer_dx12_create();
-        #elif KD_LINUX
-        renderer_vk1_create();
-        #endif
-
         /* buffers */
         float vertices[] = {
                 /* pos f3 - color f3 */
@@ -99,6 +85,9 @@ kd_setup() {
         auto res = kd_chunk_add(&ch_desc, &spin_ctx.chunk_id);
         (void)res;
         //assert(res == KD_RESULT_OK);
+        
+        auto ok = kd_log(KD_LOG_INFO, "setup");
+        assert(ok == KD_RESULT_OK);
 }
 
 KD_API KD_EXPORT void
@@ -110,25 +99,22 @@ kd_shutdown() {
 
 KD_API KD_EXPORT void
 kd_early_think() {
-        int i;
-        (void)i;
+        auto ok = kd_log(KD_LOG_INFO, "early think");
+        assert(ok == KD_RESULT_OK);
 }
 
 
 KD_API KD_EXPORT void
 kd_think() {
-        int i;
-        (void)i;
+        auto ok = kd_log(KD_LOG_INFO, "think");
+        assert(ok == KD_RESULT_OK);
 }
 
 
 KD_API KD_EXPORT void
 kd_late_think() {
-        #if KD_WINDOWS
-        renderer_dx12_render();
-        #elif KD_LINUX
-        renderer_vk1_render();
-        #endif
+        auto ok = kd_log(KD_LOG_INFO, "late think");
+        assert(ok == KD_RESULT_OK);
 }
 
 
