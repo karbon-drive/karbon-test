@@ -1,7 +1,7 @@
 {
         "projects" : [
                 {
-                        "name" : "test_spinning_cube",
+                        "name" : "test_hello_world",
                         "kind" : "SharedLib",
                         "language" : "C++",
 
