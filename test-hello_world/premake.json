@@ -6,6 +6,7 @@
                         "language" : "C++",
 
                         "files" : [
+                                "./**.json",
                                 "./**.hpp",
                                 "./**.cpp"
                         ],
