@@ -1,29 +1,15 @@
 #include <karbon/drive.h>
-#include <assert.h>
+#include <karbon/app.h>
 #include <vector>
 #include <iostream>
+#include <assert.h>
 
 
-KD_API KD_EXPORT void
-kd_setup() {
-        /* setup your project */
-}
+/* ----------------------------------------------------------- Application -- */
 
 
-KD_API KD_EXPORT void
-kd_shutdown() {
-        /* shutdown your project */
-}
-
-
-KD_API KD_EXPORT void
-kd_think() {
-        /* project tick */
-}
-
-
-KD_API KD_EXPORT int
-kd_project_entry()
+void
+startup()
 {
         /* show vendor string */
         int size;
@@ -32,13 +18,19 @@ kd_project_entry()
 
         std::vector<char> str(size);
         
-        if (str.size() >= size) {
+        if ((int)str.size() >= size) {
                 char *p_str = str.data();
-                ok = kd_ctx_get_vendor_string(&p_str, 0);
+                ok = kd_ctx_get_vendor_string(p_str, 0);
                 assert(ok == KD_RESULT_OK);
         }
         
         std::cout << "Vendor String: " << str.data() << std::endl;
-
-        return 1; /* 1 for good, 0 for fail */
 }
+
+
+/* ----------------------------------------------- Application Description -- */
+
+
+KD_APP_NAME("Hello World")
+KD_APP_DESC("A very simple Karbon Drive App")
+KD_APP_STARTUP_FN(startup)
